@@ -12,6 +12,9 @@ enum State { IDLE, CHASE, ATTACK }
 @export var attack_cooldown: float = 1.2
 @export var attack_range: float = 1.6
 @export var respawn_time: float = 4.0
+## Se o personagem aparecer de costas/de lado em relação a pra onde anda,
+## ajuste aqui (normalmente 0 ou 180) em vez de mexer no cálculo abaixo.
+@export var model_facing_offset_degrees: float = 0.0
 
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
 var state: State = State.IDLE
@@ -24,6 +27,7 @@ var _spawn_position: Vector3
 @onready var health: Health = $Health as Health
 @onready var detection_area: Area3D = $DetectionArea as Area3D
 @onready var attack_area: Area3D = $Model/AttackArea as Area3D
+@onready var animation: EnemyAnimation = $Animation as EnemyAnimation
 
 
 func _ready() -> void:
@@ -70,7 +74,7 @@ func _process_chase(delta: float) -> void:
 	var dir := to_player.normalized()
 	velocity.x = dir.x * move_speed
 	velocity.z = dir.z * move_speed
-	var target_angle := atan2(dir.x, dir.z)
+	var target_angle := atan2(dir.x, dir.z) + deg_to_rad(model_facing_offset_degrees)
 	model.rotation.y = lerp_angle(model.rotation.y, target_angle, 10.0 * delta)
 
 
@@ -78,6 +82,7 @@ func _start_attack() -> void:
 	if _attack_timer > 0.0:
 		return
 	_attack_timer = attack_cooldown
+	animation.play_attack()
 	for body in attack_area.get_overlapping_bodies():
 		_apply_attack_damage(body)
 	await get_tree().create_timer(0.3).timeout
@@ -117,6 +122,7 @@ func _on_died() -> void:
 	await get_tree().create_timer(respawn_time).timeout
 	global_position = _spawn_position
 	health.reset()
+	animation.reset()
 	visible = true
 	collision_layer = 4
 	collision_mask = 1

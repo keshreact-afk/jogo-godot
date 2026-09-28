@@ -9,6 +9,9 @@ extends CharacterBody3D
 @export var turn_speed: float = 12.0
 @export var camera_pitch_min_degrees: float = -60.0
 @export var camera_pitch_max_degrees: float = 20.0
+## Se o personagem aparecer de costas/de lado em relação a pra onde anda,
+## ajuste aqui (normalmente 0 ou 180) em vez de mexer no cálculo abaixo.
+@export var model_facing_offset_degrees: float = 0.0
 
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
 
@@ -92,7 +95,7 @@ func _handle_movement(delta: float) -> void:
 	if move_dir.length() > 0.01:
 		velocity.x = move_dir.x * move_speed
 		velocity.z = move_dir.z * move_speed
-		var target_angle := atan2(move_dir.x, move_dir.z)
+		var target_angle := atan2(move_dir.x, move_dir.z) + deg_to_rad(model_facing_offset_degrees)
 		model.rotation.y = lerp_angle(model.rotation.y, target_angle, turn_speed * delta)
 	else:
 		velocity.x = move_toward(velocity.x, 0.0, move_speed)
